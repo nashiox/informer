@@ -105,17 +105,17 @@ func doWatch(c *cli.Context) {
 
 	pid := string(psreg.FindSubmatch(out)[2])
 
-	cmd := exec.Command("strace", "-e", "read,write", "-s16384", "-q", "-x", "-p", pid, "-o", output)
+	cmd := exec.Command("strace", "-e", "read", "-s16384", "-q", "-x", "-p", pid, "-o", output)
 	cmd.Start()
 	defer cmd.Process.Kill()
 
 	tmp, err := tail.TailFile(output, tail.Config{Follow: true})
 	assert(err)
 
-	fds := make(map[int]string, 3)
-	keys := make([]int, 3)
+	fds := make(map[int]string, 2)
+	keys := make([]int, 2)
 
-	tmpreg := regexp.MustCompile(`(read|write)\((\d+), "(.*)"`)
+	tmpreg := regexp.MustCompile(`(read)\((\d+), "(.*)"`)
 	for line := range tmp.Lines {
 		if tmpreg.Match([]byte(line.Text)) {
 			group := tmpreg.FindSubmatch([]byte(line.Text))
@@ -123,7 +123,7 @@ func doWatch(c *cli.Context) {
 			key, err := strconv.Atoi(string(group[2]))
 			assert(err)
 			fds[key] = string(group[1])
-			if len(fds) >= 3 {
+			if len(fds) >= 2 {
 				for i := range fds {
 					keys = append(keys, i)
 				}
@@ -170,18 +170,47 @@ func doReview(c *cli.Context) {
 
 	fp, err := os.Open(c.Args()[0])
 	assert(err)
-	defer fp.Close()
+
+	fds := make(map[int]string, 2)
+	keys := make([]int, 2)
+
+	scanner := bufio.NewScanner(fp)
+
+	tmpreg := regexp.MustCompile(`(read)\((\d+), "(.*)"`)
+	for scanner.Scan() {
+		text := []byte(scanner.Text())
+		if tmpreg.Match(text) {
+			group := tmpreg.FindSubmatch(text)
+
+			key, err := strconv.Atoi(string(group[2]))
+			assert(err)
+			fds[key] = string(group[1])
+			if len(fds) >= 2 {
+				for i := range fds {
+					keys = append(keys, i)
+				}
+				sort.Ints(keys)
+				break
+			}
+		}
+	}
+
+	fp.Close()
 
 	out, err := exec.Command("clear").Output()
 	assert(err)
 	fmt.Print(string(out))
 
+	fp, err = os.Open(c.Args()[0])
+	assert(err)
+	defer fp.Close()
+
 	outreg := regexp.MustCompile(
-		fmt.Sprintf(`read\(%s, "(.*)"`, "11"),
+		fmt.Sprintf(`read\(%d, "(.*)"`, keys[len(keys)-1]),
 	)
 	asciireg := regexp.MustCompile(`\\x(..)`)
 
-	scanner := bufio.NewScanner(fp)
+	scanner = bufio.NewScanner(fp)
 	for scanner.Scan() {
 		text := []byte(scanner.Text())
 		if outreg.Match(text) {
