@@ -145,12 +145,13 @@ func doWatch(c *cli.Context) {
 	outreg := regexp.MustCompile(
 		fmt.Sprintf(`read\(%d, "(.*)"`, keys[len(keys)-1]),
 	)
+
 	asciireg := regexp.MustCompile(`\\x(..)`)
 	for line := range t.Lines {
 		if outreg.Match([]byte(line.Text)) {
 			s := string(outreg.FindSubmatch([]byte(line.Text))[1])
 			s = asciireg.ReplaceAllStringFunc(s, func(ss string) string {
-				ascii, err := strconv.ParseInt(strings.Replace(ss, `\`, "0", -1), 0, 64)
+				ascii, err := strconv.ParseInt(strings.Replace(ss, `\x`, "", -1), 16, 64)
 				assert(err)
 				return string(ascii)
 			})
@@ -216,7 +217,7 @@ func doReview(c *cli.Context) {
 		if outreg.Match(text) {
 			s := string(outreg.FindSubmatch(text)[1])
 			s = asciireg.ReplaceAllStringFunc(s, func(ss string) string {
-				ascii, err := strconv.ParseInt(strings.Replace(ss, `\`, "0", -1), 0, 64)
+				ascii, err := strconv.ParseInt(strings.Replace(ss, `\x`, "", -1), 16, 64)
 				assert(err)
 				return string(ascii)
 			})
@@ -229,7 +230,6 @@ func doReview(c *cli.Context) {
 
 	fmt.Println()
 	assert(scanner.Err())
-
 }
 
 func doList(c *cli.Context) {
