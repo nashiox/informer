@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"log"
+	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
@@ -146,17 +147,16 @@ func doWatch(c *cli.Context) {
 		fmt.Sprintf(`read\(%d, "(.*)"`, keys[len(keys)-1]),
 	)
 
-	asciireg := regexp.MustCompile(`\\x(..)`)
 	for line := range t.Lines {
 		if outreg.Match([]byte(line.Text)) {
 			s := string(outreg.FindSubmatch([]byte(line.Text))[1])
-			s = asciireg.ReplaceAllStringFunc(s, func(ss string) string {
-				ascii, err := strconv.ParseInt(strings.Replace(ss, `\x`, "", -1), 16, 64)
-				assert(err)
-				return string(ascii)
-			})
-			s = strings.Replace(s, `\n`, string(0x0a), -1)
-			s = strings.Replace(s, `\r`, string(0x0d), -1)
+
+			s = strings.Replace(s, `\x`, `%`, -1)
+			s = strings.Replace(s, `\n`, `%0a`, -1)
+			s = strings.Replace(s, `\r`, `%0d`, -1)
+
+			s, err = url.QueryUnescape(s)
+			assert(err)
 
 			fmt.Print(s)
 		}
@@ -209,20 +209,19 @@ func doReview(c *cli.Context) {
 	outreg := regexp.MustCompile(
 		fmt.Sprintf(`read\(%d, "(.*)"`, keys[len(keys)-1]),
 	)
-	asciireg := regexp.MustCompile(`\\x(..)`)
 
 	scanner = bufio.NewScanner(fp)
 	for scanner.Scan() {
 		text := []byte(scanner.Text())
 		if outreg.Match(text) {
 			s := string(outreg.FindSubmatch(text)[1])
-			s = asciireg.ReplaceAllStringFunc(s, func(ss string) string {
-				ascii, err := strconv.ParseInt(strings.Replace(ss, `\x`, "", -1), 16, 64)
-				assert(err)
-				return string(ascii)
-			})
-			s = strings.Replace(s, `\n`, string(0x0a), -1)
-			s = strings.Replace(s, `\r`, string(0x0d), -1)
+
+			s = strings.Replace(s, `\x`, `%`, -1)
+			s = strings.Replace(s, `\n`, `%0a`, -1)
+			s = strings.Replace(s, `\r`, `%0d`, -1)
+
+			s, err = url.QueryUnescape(s)
+			assert(err)
 
 			fmt.Print(s)
 		}
