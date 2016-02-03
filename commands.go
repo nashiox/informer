@@ -12,6 +12,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/codegangsta/cli"
 	"github.com/hpcloud/tail"
@@ -43,6 +44,13 @@ var commandReview = cli.Command{
 	Description: `
 `,
 	Action: doReview,
+	Flags: []cli.Flag{
+		cli.IntFlag{
+			Name:  "delay,d",
+			Value: 100,
+			Usage: "",
+		},
+	},
 }
 
 var commandList = cli.Command{
@@ -169,6 +177,8 @@ func doReview(c *cli.Context) {
 		os.Exit(1)
 	}
 
+	delay := c.Int("delay")
+
 	fp, err := os.Open(c.Args()[0])
 	assert(err)
 
@@ -224,6 +234,7 @@ func doReview(c *cli.Context) {
 			assert(err)
 
 			fmt.Print(s)
+			time.Sleep(time.Duration(delay) * time.Millisecond)
 		}
 	}
 
