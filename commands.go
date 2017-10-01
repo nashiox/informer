@@ -2,10 +2,10 @@ package main
 
 import (
 	"bufio"
+	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"log"
-	"net/url"
 	"os"
 	"os/exec"
 	"regexp"
@@ -154,17 +154,25 @@ func doWatch(c *cli.Context) {
 	outreg := regexp.MustCompile(
 		fmt.Sprintf(`read\(%d, "(.*)"`, keys[len(keys)-1]),
 	)
+	hexreg := regexp.MustCompile(`\\x(..)`)
 
 	for line := range t.Lines {
 		if outreg.Match([]byte(line.Text)) {
 			s := string(outreg.FindSubmatch([]byte(line.Text))[1])
 
-			s = strings.Replace(s, `\x`, `%`, -1)
-			s = strings.Replace(s, `\n`, `%0a`, -1)
-			s = strings.Replace(s, `\r`, `%0d`, -1)
+			s = hexreg.ReplaceAllStringFunc(s, func(src string) string {
+				tname := hexreg.FindStringSubmatch(src)
+				h, err := hex.DecodeString(tname[1])
+				assert(err)
 
-			s, err = url.QueryUnescape(s)
-			assert(err)
+				return string(h)
+			})
+
+			s = strings.Replace(s, `\t`, "\t", -1)
+			s = strings.Replace(s, `\r`, "\r", -1)
+			s = strings.Replace(s, `\n`, "\n", -1)
+			s = strings.Replace(s, `\\`, "\\", -1)
+			s = strings.Replace(s, `\"`, `"`, -1)
 
 			fmt.Print(s)
 		}
@@ -219,6 +227,7 @@ func doReview(c *cli.Context) {
 	outreg := regexp.MustCompile(
 		fmt.Sprintf(`read\(%d, "(.*)"`, keys[len(keys)-1]),
 	)
+	hexreg := regexp.MustCompile(`\\x(..)`)
 
 	scanner = bufio.NewScanner(fp)
 	for scanner.Scan() {
@@ -226,12 +235,19 @@ func doReview(c *cli.Context) {
 		if outreg.Match(text) {
 			s := string(outreg.FindSubmatch(text)[1])
 
-			s = strings.Replace(s, `\x`, `%`, -1)
-			s = strings.Replace(s, `\n`, `%0a`, -1)
-			s = strings.Replace(s, `\r`, `%0d`, -1)
+			s = hexreg.ReplaceAllStringFunc(s, func(src string) string {
+				tname := hexreg.FindStringSubmatch(src)
+				h, err := hex.DecodeString(tname[1])
+				assert(err)
 
-			s, err = url.QueryUnescape(s)
-			assert(err)
+				return string(h)
+			})
+
+			s = strings.Replace(s, `\t`, "\t", -1)
+			s = strings.Replace(s, `\r`, "\r", -1)
+			s = strings.Replace(s, `\n`, "\n", -1)
+			s = strings.Replace(s, `\\`, "\\", -1)
+			s = strings.Replace(s, `\"`, `"`, -1)
 
 			fmt.Print(s)
 			time.Sleep(time.Duration(delay) * time.Millisecond)
