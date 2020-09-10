@@ -1,0 +1,29 @@
+name: test
+on: [push]
+
+jobs:
+  test:
+    name: ubuntu-latest
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v1
+
+      - name: Set up Go
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.15
+
+      - name: Restore Cache
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: go-pkg-mod-${{ hashFiles('go.sum') }}
+          restore-keys: |
+            go-pkg-mod-
+
+      - name: Run Linter
+        uses: golangci/golangci-lint-action@v1
+        with:
+          version: v1.29
+          args: --tests --disable-all --enable=goimports --enable=golint --enable=govet --enable=errcheck --enable=staticcheck

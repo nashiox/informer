@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/codegangsta/cli"
+	"github.com/urfave/cli"
 )
 
 func main() {
@@ -12,7 +12,7 @@ func main() {
 	app.Version = Version
 	app.Usage = ""
 	app.Author = "nashiox"
-	app.Email = "info@nashio-lab.info"
+	app.Email = "u.4.o.holly12@gmail.com"
 	app.Commands = Commands
 
 	app.Run(os.Args)

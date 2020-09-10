@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/codegangsta/cli"
 	"github.com/hpcloud/tail"
+	"github.com/urfave/cli"
 )
 
 var Commands = []cli.Command{
