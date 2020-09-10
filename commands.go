@@ -75,7 +75,7 @@ func assert(err error) {
 
 func doWatch(c *cli.Context) {
 	if len(c.Args()) < 1 {
-		cli.ShowAppHelp(c)
+		_ = cli.ShowAppHelp(c)
 		os.Exit(1)
 	}
 
@@ -90,12 +90,12 @@ func doWatch(c *cli.Context) {
 	}
 
 	if !strings.HasPrefix(tty, "pts/") {
-		fmt.Errorf("Unrecognized psuedo terminal [%s]", tty)
+		fmt.Fprintf(os.Stderr, "Unrecognized psuedo terminal [%s]\n", tty)
 		os.Exit(2)
 	}
 
 	if _, err := os.Stat("/dev/" + tty); os.IsNotExist(err) {
-		fmt.Errorf("Psuedo terminal [%s] currently does NOT exist.")
+		fmt.Fprintf(os.Stderr, "Psuedo terminal [%s] currently does NOT exist.\n", tty)
 		os.Exit(2)
 	}
 
@@ -108,15 +108,15 @@ func doWatch(c *cli.Context) {
 	)
 
 	if !psreg.Match(out) {
-		fmt.Errorf("Unable to locate corresponding ssh session for [%s]", tty)
+		fmt.Fprintf(os.Stderr, "Unable to locate corresponding ssh session for [%s]", tty)
 		os.Exit(2)
 	}
 
 	pid := string(psreg.FindSubmatch(out)[2])
 
 	cmd := exec.Command("strace", "-e", "read", "-s16384", "-q", "-x", "-p", pid, "-o", output)
-	cmd.Start()
-	defer cmd.Process.Kill()
+	_ = cmd.Start()
+	defer func() { _ = cmd.Process.Kill() }()
 
 	tmp, err := tail.TailFile(output, tail.Config{Follow: true})
 	assert(err)
@@ -181,7 +181,7 @@ func doWatch(c *cli.Context) {
 
 func doReview(c *cli.Context) {
 	if len(c.Args()) < 1 {
-		cli.ShowAppHelp(c)
+		_ = cli.ShowAppHelp(c)
 		os.Exit(1)
 	}
 
